@@ -1,66 +1,89 @@
 namespace AsyncOrderedQueue;
 
+/// <summary>
+/// Unbounded storage that will dequeue items in order of expected sequence numbers.
+/// </summary>
+/// <typeparam name="T">The typoe of elements to be stored.</typeparam>
 public sealed class OrderedQueue<T>
 {
-    private readonly object _syncRoot = new();
-    private readonly Dictionary<int, T> _storage = new();
     private readonly Dictionary<int, TaskCompletionSource<T>> _handlers = new();
+    private readonly Dictionary<int, T> _buffer = new();
 
-    private int _exceptedSequenceNumber;
+    // Note: Our data structures are not thread safe => we need locks
+    private readonly object _syncRoot = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OrderedQueue{T}"/> class.
+    /// </summary>
+    /// <param name="firstSequenceNumber">The first sequence number.</param>
     public OrderedQueue(int firstSequenceNumber = 0)
     {
-        _exceptedSequenceNumber = firstSequenceNumber;
+        ExceptedSequenceNumber = firstSequenceNumber;
     }
 
+    /// <summary>
+    /// Gets the count of enqueued items
+    /// </summary>
+    public int Count
+    {
+        get
+        {
+            lock (_syncRoot)
+            {
+                return _buffer.Count;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the next expected sequence number.
+    /// </summary>
+    public int ExceptedSequenceNumber { get; private set; }
+
+    /// <summary>
+    /// Dequeues the next item from the queue.
+    /// </summary>
+    /// <returns>The item with the next expected sequence number.</returns>
+    public Task<T> DequeueAsync()
+    {
+        lock (_syncRoot)
+        {
+            // Our expected item is already buffered
+            if (_buffer.TryGetValue(ExceptedSequenceNumber, out var item))
+            {
+                _buffer.Remove(ExceptedSequenceNumber);
+                ExceptedSequenceNumber++;
+                return Task.FromResult(item);
+            }
+
+            // Our expected item has not arrived yet.
+            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _handlers.Add(ExceptedSequenceNumber, tcs);
+            ExceptedSequenceNumber++;
+
+            return tcs.Task;
+        }
+    }
+
+    /// <summary>
+    /// Adds an item to the queue.
+    /// </summary>
+    /// <param name="sequenceNumber">The items sequence number.</param>
+    /// <param name="item">The item.</param>
     public void Enqueue(int sequenceNumber, T item)
     {
         lock (_syncRoot)
         {
+            // Someone is already waiting for this item. No need to buffer
             if (_handlers.TryGetValue(sequenceNumber, out var handler))
             {
                 _handlers.Remove(sequenceNumber);
                 handler.SetResult(item);
+                return;
             }
-            else
-            {
-                _storage.Add(sequenceNumber, item);
-            }
+
+            // Keep item for future dequeue operations.
+            _buffer.Add(sequenceNumber, item);
         }
-    }
-
-    public async Task<T> DequeueAsync(CancellationToken cancellationToken = default)
-        => await DequeueAsync(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
-
-    public async Task<T> DequeueAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
-    {
-        lock (_syncRoot)
-        {
-            if (_storage.TryGetValue(_exceptedSequenceNumber, out var item))
-            {
-                Interlocked.Increment(ref _exceptedSequenceNumber);
-                return item;
-            }
-        }
-
-        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var timeoutTask = Task.Delay(timeout, cancellationTokenSource.Token);
-
-        var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-        cancellationToken.Register(() => tcs.SetCanceled());
-
-        lock (_syncRoot)
-        {
-            _handlers.Add(_exceptedSequenceNumber, tcs);
-            Interlocked.Increment(ref _exceptedSequenceNumber);
-        }
-
-        var response = await Task.WhenAny(tcs.Task, timeoutTask).ConfigureAwait(false);
-        if (response == timeoutTask)
-        {
-            throw new TimeoutException();
-        }
-
-        return await tcs.Task.ConfigureAwait(false);
     }
 }

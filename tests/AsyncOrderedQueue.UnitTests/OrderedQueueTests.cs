@@ -42,20 +42,4 @@ public class OrderedQueueTests
         Assert.Equal(item0, actualItem0);
         Assert.Equal(item1, actualItem1);
     }
-
-    [Fact]
-    public async Task NoItemAvailableThenTimeout()
-    {
-        // Arrange
-        var sut = new OrderedQueue<string>();
-
-        // Act
-        var ex = await Record.ExceptionAsync(async () =>
-        {
-            await sut.DequeueAsync(TimeSpan.FromMilliseconds(10));
-        });
-
-        // Assert
-        Assert.IsType<TimeoutException>(ex);
-    }
 }

@@ -1,10 +1,12 @@
+using Microsoft.Coyote;
+using Microsoft.Coyote.SystematicTesting;
+
 namespace AsyncOrderedQueue.ConcurrencyTests;
 
-public class UnitTest1
+public class Coyote
 {
-    [Fact]
-    public void Test1()
+    public async Task CoyoteTestMethod()
     {
-
+        throw new NotImplementedException();
     }
 }
