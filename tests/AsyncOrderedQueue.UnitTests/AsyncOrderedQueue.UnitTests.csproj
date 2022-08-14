@@ -34,6 +34,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="dotnet tool restore" />
     <Exec Command="dotnet coyote rewrite coyote.json" WorkingDirectory="$(OutputPath)" />
   </Target>
 
