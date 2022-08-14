@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <None Update="coyote.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
