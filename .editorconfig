@@ -4,6 +4,7 @@
 ###############################
 # All files
 [*]
+charset = utf-8
 indent_style = space
 
 # XML project files

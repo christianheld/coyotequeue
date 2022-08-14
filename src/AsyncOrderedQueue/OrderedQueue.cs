@@ -24,7 +24,7 @@ public sealed class OrderedQueue<T>
     /// <summary>
     /// Gets the count of enqueued items
     /// </summary>
-    public int Count
+    public int BufferedItemCount
     {
         get
         {

@@ -9,7 +9,13 @@ public class PublicApiSurfaceTests
     {
         // Arrange
         const string FileName = "../../../ApprovedApi.txt";
-        var currentApi = typeof(OrderedQueue<>).Assembly.GeneratePublicApi();
+        var currentApi = typeof(OrderedQueue<>).Assembly.GeneratePublicApi(new()
+        {
+            ExcludeAttributes = new[]
+            {
+                "Microsoft.Coyote.Rewriting.RewritingSignatureAttribute"
+            }
+        });
 
         var assemblyVersion = typeof(OrderedQueue<>).Assembly.GetName().Version!;
 

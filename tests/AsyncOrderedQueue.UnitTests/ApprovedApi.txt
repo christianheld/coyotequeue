@@ -4,7 +4,7 @@ namespace AsyncOrderedQueue
     public sealed class OrderedQueue<T>
     {
         public OrderedQueue(int firstSequenceNumber = 0) { }
-        public int Count { get; }
+        public int BufferedItemCount { get; }
         public int ExceptedSequenceNumber { get; }
         public System.Threading.Tasks.Task<T> DequeueAsync() { }
         public void Enqueue(int sequenceNumber, T item) { }

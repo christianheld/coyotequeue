@@ -1,0 +1,7 @@
+{
+  "AssembliesPath": ".",
+  "Assemblies": [
+    "AsyncOrderedQueue.dll",
+    "AsyncOrderedQueue.UnitTests.dll"
+  ]
+}

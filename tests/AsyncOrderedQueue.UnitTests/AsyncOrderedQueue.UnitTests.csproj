@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -26,5 +26,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AsyncOrderedQueue\AsyncOrderedQueue.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="coyote.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="dotnet coyote rewrite coyote.json" WorkingDirectory="$(OutputPath)" />
+  </Target>
 
 </Project>
